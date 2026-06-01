@@ -1,4 +1,5 @@
-﻿#ifndef WIN32_LEAN_AND_MEAN
+﻿#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
 
@@ -95,13 +96,19 @@ void main()
 	}
 
 	//6) Обработка соединений от клиентов:
-	SOCKET client_socket = accept(listen_socket, NULL, NULL);
+	sockaddr_in client_address;
+	int client_addrlen = sizeof(client_address);
+	client_address.sin_family = AF_INET;
+	SOCKET client_socket = accept(listen_socket, (SOCKADDR*)&client_address, &client_addrlen);
 	dwError = WSAGetLastError();
 	if (client_socket == INVALID_SOCKET)
 	{
 		cout << FormatLastError(dwError, szError) << endl;
 		cout << "Accept failed with error: " << WSAGetLastError() << endl;
 	}
+
+	//6.1) Получаем информацию о сокете клиента.
+	cout << inet_ntoa(client_address.sin_addr) << ":"  << ntohs(client_address.sin_port) << endl;
 
 	//7) Получение и отправка данных:
 	CHAR recvbuffer[BUFFER_LENGTH] = {};
