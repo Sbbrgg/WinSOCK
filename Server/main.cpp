@@ -108,14 +108,14 @@ void main()
 	}
 
 	//6.1) Получаем информацию о сокете клиента.
-	cout << inet_ntoa(client_address.sin_addr) << ":"  << ntohs(client_address.sin_port) << endl;
+	cout << inet_ntoa(client_address.sin_addr) << ":" << ntohs(client_address.sin_port) << endl;
 
 	//7) Получение и отправка данных:
-	CHAR recvbuffer[BUFFER_LENGTH] = {};
-	CHAR sendbuffer[BUFFER_LENGTH] = {};
 	INT iSendResult = 0;
 	do
 	{
+		CHAR recvbuffer[BUFFER_LENGTH] = {};
+		CHAR sendbuffer[BUFFER_LENGTH] = {};
 		iResult = recv(client_socket, recvbuffer, BUFFER_LENGTH, 0);
 		dwError = WSAGetLastError();
 		if (iResult > 0)
@@ -132,7 +132,7 @@ void main()
 			else cout << "Bytes sent: " << iSendResult << endl;
 		}
 		else if (iResult == 0) cout << "Connection closig..." << endl;
-		else 
+		else
 		{
 			cout << FormatLastError(dwError, szError) << endl;
 			cout << "Receive failed with error: " << WSAGetLastError() << endl;
