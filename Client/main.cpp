@@ -15,7 +15,7 @@
 using namespace std;
 
 #pragma comment(lib, "WS2_32.lib")
-//#pragma comment(lib, "FormatLastError.lib")
+#pragma comment(lib, "FormatLastError.lib")
 
 #define PORT	"27015"
 #define BUFFER_LENGTH	1500

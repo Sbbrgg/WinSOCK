@@ -7,9 +7,11 @@
 #include <winsock2.h>
 #include <WS2tcpip.h>
 #include <iphlpapi.h>
+#include <FormatLastError.h>
 using namespace std;
 
 #pragma comment (lib, "WS2_32.lib")
+#pragma comment (lib, "FormatLastError.lib")
 
 #define PORT	"27015"
 #define BUFFER_LENGTH	1500
@@ -19,11 +21,16 @@ void main()
 {
 	setlocale(LC_ALL, "");
 	cout << "SERVER" << endl;
+	DWORD dwError = 0;
+	CHAR szError[256] = {};
+	//1)Init WinSOCK:
 	WSADATA wsaData;
 	int iResult;
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+	dwError = WSAGetLastError();
 	if (iResult != 0)
 	{
+		cout << FormatLastError(dwError, szError) << endl;
 		cout << "WSAStartup failed: " << iResult << endl;
 		return;
 	}
@@ -38,8 +45,10 @@ void main()
 	hints.ai_flags = AI_PASSIVE;
 
 	iResult = getaddrinfo(NULL, PORT, &hints, &result);
+	dwError = WSAGetLastError();
 	if (iResult != 0)
 	{
+		cout << FormatLastError(dwError, szError) << endl;
 		cout << "getaddrinfo() failed: " << iResult << endl;
 		WSACleanup();
 		return;
@@ -49,8 +58,10 @@ void main()
 	//3) Создаём сокет для сервера, который он будет постоянно слушать "LISTENING":
 	SOCKET listen_socket =
 		socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+	dwError = WSAGetLastError();
 	if (listen_socket == INVALID_SOCKET)
 	{
+		cout << FormatLastError(dwError, szError) << endl;
 		cout << "Listen socket error: " << WSAGetLastError() << endl;
 		freeaddrinfo(result);
 		WSACleanup();
@@ -59,8 +70,10 @@ void main()
 
 	//4) Bind socket:
 	iResult = bind(listen_socket, result->ai_addr, result->ai_addrlen);
+	dwError = WSAGetLastError();
 	if (iResult == SOCKET_ERROR)
 	{
+		cout << FormatLastError(dwError, szError) << endl;
 		cout << "Bind failed with erorr: " << WSAGetLastError() << endl;
 		closesocket(listen_socket);
 		freeaddrinfo(result);
@@ -72,6 +85,8 @@ void main()
 	//5) Запускаем прослушивание сокета:
 	if (listen(listen_socket, MAX_CONNECTIONS) == SOCKET_ERROR)
 	{
+		dwError = WSAGetLastError();
+		cout << FormatLastError(dwError, szError) << endl;
 		cout << "Listen failed with error: " << WSAGetLastError() << endl;
 		closesocket(listen_socket);
 		freeaddrinfo(result);
@@ -81,8 +96,10 @@ void main()
 
 	//6) Обработка соединений от клиентов:
 	SOCKET client_socket = accept(listen_socket, NULL, NULL);
+	dwError = WSAGetLastError();
 	if (client_socket == INVALID_SOCKET)
 	{
+		cout << FormatLastError(dwError, szError) << endl;
 		cout << "Accept failed with error: " << WSAGetLastError() << endl;
 	}
 
@@ -93,12 +110,15 @@ void main()
 	do
 	{
 		iResult = recv(client_socket, recvbuffer, BUFFER_LENGTH, 0);
+		dwError = WSAGetLastError();
 		if (iResult > 0)
 		{
 			cout << recvbuffer << "(" << strlen(recvbuffer) << " Bytes)" << endl;
 			iSendResult = send(client_socket, recvbuffer, strlen(recvbuffer), 0);
+			dwError = WSAGetLastError();
 			if (iSendResult == SOCKET_ERROR)
 			{
+				cout << FormatLastError(dwError, szError) << endl;
 				cout << "Send failed with error: " << WSAGetLastError() << endl;
 				closesocket(client_socket);
 			}
@@ -107,16 +127,19 @@ void main()
 		else if (iResult == 0) cout << "Connection closig..." << endl;
 		else 
 		{
+			cout << FormatLastError(dwError, szError) << endl;
 			cout << "Receive failed with error: " << WSAGetLastError() << endl;
 			closesocket(client_socket);
 		}
 	} while (iResult > 0);
 
 	iResult = shutdown(client_socket, SD_BOTH);
-	if (iResult == SOCKET_ERROR)cout << "Client shutdown failed with error: " << WSAGetLastError() << endl;
+	dwError = WSAGetLastError();
+	if (iResult == SOCKET_ERROR)cout << "Client shutdown failed with error: " << FormatLastError(dwError, szError) << endl;
 
 	iResult = shutdown(listen_socket, SD_BOTH);
-	if (iResult == SOCKET_ERROR)cout << "Server shutdown failed with error: " << WSAGetLastError() << endl;
+	dwError = WSAGetLastError();
+	if (iResult == SOCKET_ERROR)cout << "Server shutdown failed with error: " << FormatLastError(dwError, szError) << endl;
 
 	closesocket(client_socket);
 	closesocket(listen_socket);
