@@ -8,7 +8,9 @@
 #include <winsock2.h>
 #include <WS2tcpip.h>
 #include <iphlpapi.h>
+
 #include <FormatLastError.h>
+#include <Messages.h>
 using namespace std;
 
 #pragma comment (lib, "WS2_32.lib")
@@ -136,6 +138,21 @@ void main()
 			);
 			clients_count++;
 		}
+		else 
+		{
+			CHAR recv_buffer[BUFFER_LENGTH] = {};
+			iResult = recv(client_socket, recv_buffer, BUFFER_LENGTH, NULL);
+			/*if (iResult != 0)
+			{
+				FormatLastError(WSAGetLastError(), szError);
+				cout << szError << endl;
+			}
+			else*/ cout << recv_buffer << endl;
+			//CHAR szDeclainMessage[] = DECLINE_MESSAGE;
+			iResult = send(client_socket, DECLINE_MESSAGE, strlen(DECLINE_MESSAGE), NULL);
+			shutdown(client_socket, SD_BOTH);
+			closesocket(client_socket);
+		}
 		//6.1) Получаем информацию о сокете клиента.
 		cout << inet_ntoa(client_address.sin_addr) << ":" << ntohs(client_address.sin_port) << endl;
 
@@ -154,13 +171,12 @@ VOID ClientHandle(SOCKET client_socket)
 {
 	sockaddr_in client_address;
 	client_address.sin_family = AF_INET;
-	SOCKADDR_IN name;
 	INT namelen = sizeof(client_address);
 	getpeername(client_socket, (SOCKADDR*)&client_address, &namelen);
-	CHAR szName[32] = {};
-	sprintf(szName, "%s:%d\t", inet_ntoa(name.sin_addr), ntohs(name.sin_port));
+	CHAR sz_client_address[32] = {};
+	sprintf(sz_client_address, "%s:%d\t", inet_ntoa(client_address.sin_addr), ntohs(client_address.sin_port));
 
-	cout << "Client connectetd: \t" << szName << "\tSOCKET:\t" << client_socket << endl;
+	cout << "Client connectetd: \t" << sz_client_address << "\tSOCKET:\t" << client_socket << endl;
 	INT iResult = 0;
 	DWORD dwError = 0;
 	CHAR szError[256] = {};
@@ -174,7 +190,7 @@ VOID ClientHandle(SOCKET client_socket)
 		dwError = WSAGetLastError();
 		if (iResult > 0)
 		{
-			cout << recvbuffer << "(" << strlen(recvbuffer) << " Bytes)" << endl;
+			cout << sz_client_address << "\t"<< recvbuffer << "(" << strlen(recvbuffer) << " Bytes)" << endl;
 			iSendResult = send(client_socket, recvbuffer, strlen(recvbuffer), 0);
 			dwError = WSAGetLastError();
 			if (iSendResult == SOCKET_ERROR)
@@ -185,7 +201,7 @@ VOID ClientHandle(SOCKET client_socket)
 			}
 			else cout << "Bytes sent: " << iSendResult << endl;
 		}
-		else if (iResult == 0) cout << "Connection closig..." << endl;
+		else if (iResult == 0) cout << sz_client_address << "\t" << "Connection closig..." << endl;
 		else
 		{
 			cout << FormatLastError(dwError, szError) << endl;
