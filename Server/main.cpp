@@ -102,33 +102,51 @@ void main()
 	}
 
 	//6) Обработка соединений от клиентов:
-	sockaddr_in client_address;
-	int client_addrlen = sizeof(client_address);
-	client_address.sin_family = AF_INET;
-	SOCKET client_socket = accept(listen_socket, (SOCKADDR*)&client_address, &client_addrlen);
-	dwError = WSAGetLastError();
-	if (client_socket == INVALID_SOCKET)
+	INT clients_count = 0;	//счётчик клиентов
+	do
 	{
-		cout << FormatLastError(dwError, szError) << endl;
-		cout << "Accept failed with error: " << WSAGetLastError() << endl;
-	}
+		sockaddr_in client_address;
+		int client_addrlen = sizeof(client_address);
+		client_address.sin_family = AF_INET;
+		SOCKET client_socket = accept(listen_socket, (SOCKADDR*)&client_address, &client_addrlen);
+		dwError = WSAGetLastError();
+		if (client_socket == INVALID_SOCKET)
+		{
+			cout << FormatLastError(dwError, szError) << endl;
+			cout << "Accept failed with error: " << WSAGetLastError() << endl;
+		}
+		if (clients_count < MAX_CONNECTIONS)
+		{
+			sockets[clients_count] = client_socket;
+			cout << clients_count << "\t" << sockets[clients_count] << endl;
+			hThreads[clients_count] =  CreateThread
+			(
+				NULL,
+				0,
+				(LPTHREAD_START_ROUTINE)ClientHandle,
+				(LPVOID)sockets[clients_count],
+				0,
+				&dwThreadIDs[clients_count]
+			);
+			clients_count++;
+		}
+		//6.1) Получаем информацию о сокете клиента.
+		cout << inet_ntoa(client_address.sin_addr) << ":" << ntohs(client_address.sin_port) << endl;
 
-	//6.1) Получаем информацию о сокете клиента.
-	cout << inet_ntoa(client_address.sin_addr) << ":" << ntohs(client_address.sin_port) << endl;
-
-	ClientHandle(client_socket);
+		//ClientHandle(client_socket);
+	} while (true);
 	
 	//iResult = shutdown(listen_socket, SD_BOTH);
 	//dwError = WSAGetLastError();
 	//if (iResult == SOCKET_ERROR)cout << "Server shutdown failed with error: " << FormatLastError(dwError, szError) << endl;
 
-	closesocket(client_socket);
 	closesocket(listen_socket);
 	WSACleanup();
 }
 
 VOID ClientHandle(SOCKET client_socket)
 {
+	cout << "Client connectetd: \t" << client_socket << endl;
 	INT iResult = 0;
 	DWORD dwError = 0;
 	CHAR szError[256] = {};
@@ -166,5 +184,5 @@ VOID ClientHandle(SOCKET client_socket)
 	dwError = WSAGetLastError();
 	if (iResult == SOCKET_ERROR)cout << "Client shutdown failed with error: " << FormatLastError(dwError, szError) << endl;
 
-
+	closesocket(client_socket);
 }
