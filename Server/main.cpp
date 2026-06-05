@@ -147,7 +147,7 @@ void main()
 				&dwThreadIDs[free_slot]
 			);
 
-			cout << inet_ntoa(client_address.sin_addr) << ":" << htons(client_address.sin_port) << "\tConnected. Slot " << free_slot << endl;
+			cout << inet_ntoa(client_address.sin_addr) << ":" << ntohs(client_address.sin_port) << "\tConnected. Slot " << free_slot << endl;
 		}
 		else
 		{
@@ -161,7 +161,7 @@ void main()
 			shutdown(client_socket, SD_BOTH);
 			closesocket(client_socket);
 
-			cout << inet_ntoa(client_address.sin_addr) << ":" << htons(client_address.sin_port) << "\tConnection Declined(server full)." << endl;
+			cout << inet_ntoa(client_address.sin_addr) << ":" << ntohs(client_address.sin_port) << "\tConnection Declined(server full)." << endl;
 		}
 
 		//6.1) Получаем информацию о сокете клиента.
