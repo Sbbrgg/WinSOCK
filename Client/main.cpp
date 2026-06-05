@@ -115,7 +115,7 @@ void main()
 		SetConsoleCP(866);
 	} while (strcmp(sendbuffer, "exit") != 0);
 
-	iResult - shutdown(connect_socket, SD_BOTH);
+	iResult = shutdown(connect_socket, SD_BOTH);
 	if (iResult == SOCKET_ERROR)
 	{
 		cout << FormatLastError(WSAGetLastError(), szError) << endl;
