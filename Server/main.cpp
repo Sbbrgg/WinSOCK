@@ -110,7 +110,7 @@ void main()
 	}
 
 	//6) Обработка соединений от клиентов:
-	INT clients_count = 0;	//счётчик клиентов
+	//INT clients_count = 0;	//счётчик клиентов
 	do
 	{
 		sockaddr_in client_address;
@@ -123,36 +123,47 @@ void main()
 			cout << FormatLastError(dwError, szError) << endl;
 			cout << "Accept failed with error: " << WSAGetLastError() << endl;
 		}
-		if (clients_count < MAX_CONNECTIONS)
+		int free_slot = -1;
+
+		for (int i = 0; i < MAX_CONNECTIONS; i++)
 		{
-			sockets[clients_count] = client_socket;
-			cout << clients_count << "\t" << sockets[clients_count] << endl;
-			hThreads[clients_count] =  CreateThread
-			(
+			if (sockets[i] == 0)
+			{
+				free_slot = i;
+				break;
+			}
+		}
+
+		if (free_slot != -1)
+		{
+			sockets[free_slot] = client_socket;
+
+			hThreads[free_slot] = CreateThread(
 				NULL,
 				0,
 				(LPTHREAD_START_ROUTINE)ClientHandle,
-				(LPVOID)sockets[clients_count],
+				(LPVOID)sockets[free_slot],
 				0,
-				&dwThreadIDs[clients_count]
+				&dwThreadIDs[free_slot]
 			);
-			clients_count++;
+
+			cout << inet_ntoa(client_address.sin_addr) << ":" << htons(client_address.sin_port) << "\tConnected. Slot " << free_slot << endl;
 		}
-		else 
+		else
 		{
-			CHAR recv_buffer[BUFFER_LENGTH] = {};
-			iResult = recv(client_socket, recv_buffer, BUFFER_LENGTH, NULL);
-			/*if (iResult != 0)
-			{
-				FormatLastError(WSAGetLastError(), szError);
-				cout << szError << endl;
-			}
-			else*/ cout << recv_buffer << endl;
-			//CHAR szDeclainMessage[] = DECLINE_MESSAGE;
-			iResult = send(client_socket, DECLINE_MESSAGE, strlen(DECLINE_MESSAGE), NULL);
+			send(
+				client_socket,
+				DECLINE_MESSAGE,
+				strlen(DECLINE_MESSAGE),
+				0
+			);
+
 			shutdown(client_socket, SD_BOTH);
 			closesocket(client_socket);
+
+			cout << inet_ntoa(client_address.sin_addr) << ":" << htons(client_address.sin_port) << "\tConnection Declined(server full)." << endl;
 		}
+
 		//6.1) Получаем информацию о сокете клиента.
 		cout << inet_ntoa(client_address.sin_addr) << ":" << ntohs(client_address.sin_port) << endl;
 
@@ -213,6 +224,15 @@ VOID ClientHandle(SOCKET client_socket)
 	iResult = shutdown(client_socket, SD_BOTH);
 	dwError = WSAGetLastError();
 	if (iResult == SOCKET_ERROR)cout << "Client shutdown failed with error: " << FormatLastError(dwError, szError) << endl;
+	for (int i = 0; i < MAX_CONNECTIONS; i++)
+	{
+		if (sockets[i] == client_socket)
+		{
+			cout << "Slot " << i << " released" << endl;
+			sockets[i] = 0;
+			break;
+		}
+	}
 
 	closesocket(client_socket);
 }
